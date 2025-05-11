@@ -1,10 +1,7 @@
 from flask import Blueprint, request, jsonify
-from ..models.patient import Patient
-from ..models.prescription import Prescription
 from ..models.base import db
-from ..models.medical_record import MedicalRecord
-from ..models.lab_result import LabResult
 from ..models.user import User
+from werkzeug.security import generate_password_hash
 
 
 userbp = Blueprint('User', __name__)
@@ -36,7 +33,8 @@ def create_user():
     try:
         data = {
                 'email': request.json['email'],
-                'password': request.json['password'],
+                'password': generate_password_hash(request.json['password'],
+                                                   'sha256'),
                 'role': request.json['role'],
                 'name': request.json.get('name')
                 }
