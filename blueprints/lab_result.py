@@ -1,12 +1,12 @@
 from flask_login import login_required
 from flask import Blueprint, request, jsonify, session
-from ..models.lab_result import LabResult
-from ..models.base import db
-from ..models.patient import Patient
+from models.lab_result import LabResult
+from models.base import db
+from models.patient import Patient
 """Blueprint for lab result routes and controllers in the Flask application."""
 
 
-lab_resultbp = Blueprint('labResult', __name__, url_prefix="lab-results")
+lab_resultbp = Blueprint('labResult', __name__, url_prefix="/lab-results")
 
 
 @lab_resultbp.route('/', methods=['POST'])

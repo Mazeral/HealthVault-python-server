@@ -1,8 +1,9 @@
-from sqlalchemy import Enum, Date, func
+from sqlalchemy import Enum, Date, func, String, ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 import enum
 from datetime import date
 from typing import List, Optional
-import db from .base
+from .base import db
 
 
 class LabResult(db.Model):
@@ -14,12 +15,14 @@ class LabResult(db.Model):
     performedAt: Mapped[date] = mapped_column(Date, server_default=func.now())
     createdAt: Mapped[date] = mapped_column(Date, server_default=func.now())
     patientId: Mapped[int] = mapped_column(ForeignKey("patient.id"))
-    patient: Mapped["Patient"] = relation(
-            back_populates="lab_results",
-            cascasde="all, delete-orphan"
-            )
+    patient: Mapped["Patient"] = relationship(
+             # *** CHANGE THIS LINE ***
+             back_populates="labResults", # Match Patient.labResults
+             cascade="all" # Keep the previous fix
+             )
     userId: Mapped[int] = mapped_column(ForeignKey("user.id"))
-    user: Mapped["User"] = relation(
-            back_populates="lab_results",
-            cascasde="all, delete-orphan"
-            )
+    user: Mapped["User"] = relationship(
+             # *** CHANGE THIS LINE ***
+             back_populates="labResults", # Match User.labResults
+             cascade="all" # Keep the previous fix
+             )

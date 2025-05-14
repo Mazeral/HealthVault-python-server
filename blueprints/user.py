@@ -1,7 +1,7 @@
 from flask_login import login_required
 from flask import Blueprint, request, jsonify
-from ..models.base import db
-from ..models.user import User
+from models.base import db
+from models.user import User
 from werkzeug.security import generate_password_hash
 
 

@@ -1,204 +1,124 @@
 from flask_login import login_required
 from flask import Blueprint, request, jsonify, session
-from ..models.patient import Patient
-from ..models.base import db
-from ..models.medical_record import MedicalRecord
-from ..models.lab_result import LabResult
+import datetime
+from models.patient import Patient
+from models.base import db
+from models.medical_record import MedicalRecord
+from models.lab_result import LabResult
 
 
-patientbp = Blueprint('Patient', __name__, url_prefix='patient')
+patientbp = Blueprint('Patient', __name__, url_prefix='/patient')
 
 
 @patientbp.route('/', methods=['POST'])
 @login_required
 def new_patient():
+    """Create a new patient."""
+    data = request.get_json()
+    if not data or 'name' not in data or 'dob' not in data or 'gender' not in data:
+        return jsonify({'error': 'Missing required fields'}), 400
     try:
-        create_data = {
-                'fullName': request.form['fullName'],
-                'sex': request.form['sex'],
-                'dateOfBirth': request.form.get('dateOfBirth'),
-                'phone': request.form.get('phone'),
-                'email': request.form.get('email'),
-                'address': request.form.get('address'),
-                }
-        patient = Patient(**create_data)
-        db.session.add(patient)
-        db.session.commit()
-        return jsonify({'message': f'Patient data: {patient}'}), 201
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        dob = datetime.datetime.strptime(data['dob'], '%Y-%m-%d').date()
+    except ValueError:
+        return jsonify({'error': 'Invalid date format for dob (YYYY-MM-DD)'}), 400
 
+    new_patient = Patient(name=data['name'], dob=dob, gender=data['gender'],
+                          contact=data.get('contact'))
+    db.session.add(new_patient)
+    db.session.commit()
+    return jsonify({'message': 'Patient created successfully', 'id': new_patient.id}), 201
 
-@patientbp.route('/int:<patient_id>', methods=['GET'])
+@patientbp.route('/<int:patient_id>', methods=['GET'])
 @login_required
 def get_patient_id(patient_id):
-    try:
-        patient = db.session.get(Patient, patient_id)
-        if not patient:
-            raise ValueError('No patient found')
-        return jsonify({'patient': patient}), 200
-    except ValueError as ve:
-        return jsonify({'error': str(ve)}), 500
-
+    """Retrieve a specific patient by ID."""
+    patient = db.session.get(Patient, patient_id)
+    if patient:
+        return jsonify(patient.to_dict())
+    return jsonify({'error': 'Patient not found'}), 404
 
 @patientbp.route('/patients', methods=['GET'])
 @login_required
 def get_patients():
-    try:
-        patients = db.session.query(Patient).all()
-        return jsonify({'data': patients}), 200
-    except Exception as e:
-        return jsonify({'error': str(e)})
+    """Retrieve all patients."""
+    patients = Patient.query.all()
+    return jsonify([patient.to_dict() for patient in patients])
 
-
-@patientbp.route('/int:<patient_id>', methods=['POST'])
+@patientbp.route('/<int:patient_id>', methods=['POST'])
 @login_required
 def update_patient(patient_id):
-    try:
-        if patient_id is None or patient_id <= 0:
-            raise ValueError("No id provided")
-        patient = db.session.get(Patient, patient_id)
-        if not patient:
-            raise ValueError('No patient found')
-        update_data = {
-            key: request.form.get(key)
-            for key in ['fullName',
-                        'dateOfBirth',
-                        'phone',
-                        'email',
-                        'address',
-                        'sex',
-                        'bloodGroup'
-                        ]
-            if request.form.get(key)
-                }
-        update_data['userId'] = session.get('id')
-        for key, value in update_data:
-            setattr(patient, key, value)
-            db.session.commit()
-        return jsonify({'updated': update_data})
-    except Exception as e:
-        return jsonify({'error': str(e)})
-
+    """Update an existing patient's information."""
+    patient = db.session.get(Patient, patient_id)
+    if not patient:
+        return jsonify({'error': 'Patient not found'}), 404
+    data = request.get_json()
+    if data:
+        patient.name = data.get('name', patient.name)
+        if 'dob' in data:
+            try:
+                patient.dob = datetime.datetime.strptime(data['dob'], '%Y-%m-%d').date()
+            except ValueError:
+                return jsonify({'error': 'Invalid date format for dob (YYYY-MM-DD)'}), 400
+        patient.gender = data.get('gender', patient.gender)
+        patient.contact = data.get('contact', patient.contact)
+        db.session.commit()
+        return jsonify({'message': 'Patient updated successfully'})
+    return jsonify({'message': 'No data provided for update'}), 200
 
 @patientbp.route('/<int:patient_id>/medical_record',
                  methods=['POST'])
 @login_required
 def add_record(patient_id):
-    try:
-        if patient_id is None or patient_id <= 0:
-            raise ValueError("Patient id not provided ")
-        if not db.session.get(Patient, patient_id):
-            raise ValueError("Patient not found")
-        data = {
-                'patientId': patient_id,
-                'diagnosis': request.form['diagnosis'],
-                'notes': request.form.get('notes')
-                }
-        new_record = MedicalRecord(**data)
-        db.session.add(new_record)
-        db.commit()
-        return jsonify({'message': f'Created a medical record for \
-                patient: with id {patient_id}'}), 201
-    except Exception as e:
-        return jsonify({'error': str(e)})
-
+    """Add a medical record for a specific patient."""
+    patient = db.session.get(Patient, patient_id)
+    if not patient:
+        return jsonify({'error': 'Patient not found'}), 404
+    data = request.get_json()
+    if not data or 'diagnosis' not in data or 'treatment' not in data:
+        return jsonify({'error': 'Missing diagnosis or treatment'}), 400
+    new_record = MedicalRecord(patient_id=patient_id, diagnosis=data['diagnosis'],
+                               treatment=data['treatment'], notes=data.get('notes'))
+    db.session.add(new_record)
+    db.session.commit()
+    return jsonify({'message': 'Medical record added successfully'}), 201
 
 @patientbp.route('/<int:patient_id>/medical-record',
                  methods=['GET'])
 @login_required
 def get_med_record(patient_id):
-    try:
-        if patient_id is None or patient_id <= 0:
-            raise ValueError("Patient id not provided ")
-        if not db.session.get(Patient, patient_id):
-            raise ValueError("Patient not found")
-        medical_records = db.sesion.query(MedicalRecord).filter(
-                MedicalRecord.patientId == patient_id
-                )
-        return jsonify({'Medical Record': medical_records}), 200
-    except Exception as e:
-        return jsonify({'error': str(e)})
-
+    """Retrieve medical records for a specific patient."""
+    patient = db.session.get(Patient, patient_id)
+    if not patient:
+        return jsonify({'error': 'Patient not found'}), 404
+    records = MedicalRecord.query.filter_by(patient_id=patient_id).all()
+    return jsonify([record.to_dict() for record in records])
 
 @patientbp.route('/<int:patient_id>/lab-results',
                  methods=['GET'])
 @login_required
 def get_lab_result(patient_id):
-    try:
-        if patient_id is None or patient_id <= 0:
-            raise ValueError("Patient id not provided ")
-        if not db.session.get(Patient, patient_id):
-            raise ValueError("Patient not found")
-        lab_results = db.sesion.query(LabResult).filter(
-                LabResult.patientId == patient_id
-                )
-        return jsonify({'Lab result': lab_results}), 200
-    except Exception as e:
-        return jsonify({'error': str(e)})
-
+    """Retrieve lab results for a specific patient."""
+    patient = db.session.get(Patient, patient_id)
+    if not patient:
+        return jsonify({'error': 'Patient not found'}), 404
+    lab_results = LabResult.query.filter_by(patient_id=patient_id).all()
+    return jsonify([result.to_dict() for result in lab_results])
 
 @patientbp.route('/<int:patient_id>',
                  methods=['DELETE'])
 @login_required
 def delete_patient(patient_id):
-    try:
-        if patient_id is None or patient_id <= 0:
-            raise ValueError("Patient id not provided ")
-        patient = db.session.get(Patient, patient_id):
-        if not patient
-            raise ValueError("Patient not found")
+    """Delete a specific patient by ID."""
+    patient = db.session.get(Patient, patient_id)
+    if patient:
         db.session.delete(patient)
         db.session.commit()
-        return jsonify({'message': f'Patient with id: {patient_id} deleted'})
-    except Exception as e:
-        return jsonify({'error': str(e)})
-
+        return jsonify({'message': 'Patient deleted successfully'})
+    return jsonify({'error': 'Patient not found'}), 404
 
 @patientbp.route('/statistics', methods=['GET'])
 @login_required
 def get_statistics():
-    """
-    Calculates and returns the number of patients created today, this month, and this year.
-    """
-    try:
-        today = datetime.utcnow().date()
-
-        # Calculate today's count
-        start_of_day = datetime(today.year, today.month, today.day, 0, 0, 0)
-        end_of_day = datetime(today.year,
-                              today.month,
-                              today.day,
-                              23, 59, 59, 999999)
-        today_count = db.session.query(Patient)
-        .filter(Patient.createdAt >= start_of_day,
-                Patient.createdAt <= end_of_day).count()
-
-        # Calculate monthly count
-        start_of_month = datetime(today.year, today.month, 1, 0, 0, 0)
-        next_month = today.month + 1
-        year_of_next_month = today.year
-        if next_month > 12:
-            next_month = 1
-            year_of_next_month += 1
-        end_of_month = datetime(year_of_next_month,
-                                next_month,
-                                1, 0, 0, 0) - timedelta(seconds=1)
-        monthly_count = db.session.query(Patient)
-        .filter(Patient.createdAt >= start_of_month,
-                Patient.createdAt <= end_of_month).count()
-
-        # Calculate yearly count
-        start_of_year = datetime(today.year, 1, 1, 0, 0, 0)
-        end_of_year = datetime(today.year, 12, 31, 23, 59, 59, 999999)
-        yearly_count = db.session.query(Patient)
-        .filter(Patient.createdAt >= start_of_year,
-                Patient.createdAt <= end_of_year).count()
-
-        return jsonify({
-            'today': today_count,
-            'monthly': monthly_count,
-            'yearly': yearly_count
-        }), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    """Retrieve some patient statistics (e.g., total number of patients)."""
+    total_patients = Patient.query.count()
+    return jsonify({'total_patients': total_patients})

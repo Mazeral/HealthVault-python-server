@@ -1,9 +1,9 @@
 from flask_login import login_required
 from flask import Blueprint, request, jsonify, session
-from ..models.patient import Patient
-from ..models.prescription import Prescription
-from ..models.base import db
-from ..models.user import User
+from models.patient import Patient
+from models.prescription import Prescription
+from models.base import db
+from models.user import User
 
 
 prescriptionbp = Blueprint('Prescription', __name__)

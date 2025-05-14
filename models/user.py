@@ -1,9 +1,10 @@
-import db from .base
-from sqlalchemy import Enum, Date, func
+from .base import db
+from sqlalchemy import Enum, Date, func, String, ForeignKey
+from sqlalchemy.orm  import Mapped, mapped_column, relationship
 import enum
 from datetime import date
 from typing import List
-from flask-login import UserMixin
+from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 
 

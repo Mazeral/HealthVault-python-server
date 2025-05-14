@@ -1,8 +1,9 @@
-from sqlalchemy import Enum, Date, func
+from sqlalchemy import Enum, Date, func, String, ForeignKey
+from sqlalchemy.orm  import Mapped, mapped_column, relationship
 import enum
 from datetime import date
 from typing import List, Optional
-import db from .base
+from .base import db
 
 
 class Sex(enum.Enum):

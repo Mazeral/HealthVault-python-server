@@ -1,8 +1,9 @@
-from sqlalchemy import Enum, Date, func
+from sqlalchemy import Enum, Date, func, String, ForeignKey
+from sqlalchemy.orm  import Mapped, mapped_column, relationship
 import enum
 from datetime import date
 from typing import List, Optional
-import db from .base
+from .base import db
 
 
 class Prescription(db.Model):
@@ -14,10 +15,12 @@ class Prescription(db.Model):
     prescribedAt: Mapped[date] = mapped_column(Date, server_default=func.now())
     patientId: Mapped[int] = mapped_column(ForeignKey("patient.id"))
     patient: Mapped["Patient"] = relationship(
-            back_populates="prescriptions",
-            cascade="all, delete-orphan"
-            )
+             # *** CHANGE THIS LINE ***
+             back_populates="prescriptions", # Match Patient.prescriptions (this one was already correct based on the attribute name)
+             cascade="all" # Keep the previous fix
+             )
+    # The user relationship below seems correct already
     userId: Mapped[int] = mapped_column(ForeignKey("user.id"))
     user: Mapped["User"] = relationship(
-            back_populates='prescriptions'
-            )
+             back_populates='prescriptions' # Match User.prescriptions
+             )

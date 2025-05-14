@@ -1,13 +1,13 @@
 from flask_login import login_required
 from flask import Blueprint, request, jsonify, session
-from ..models.medical_record import MedicalRecord
-from ..models.base import db
-from ..models.patient import Patient
+from models.medical_record import MedicalRecord
+from models.base import db
+from models.patient import Patient
 
 """Blueprint for medical record routes and controllers
 in the Flask application."""
 
-med_recordbp = Blueprint('MedRecord', __name__, url_prefix='medical_record')
+med_recordbp = Blueprint('MedRecord', __name__, url_prefix='/medical_record')
 
 
 @med_recordbp.route('/', methods=['GET'])
@@ -44,16 +44,9 @@ def update_record(med_id):
         if not med_id:
             raise ValueError("Error in id")
         update_data = {
-                key: for key in [
-                    'diagnosis',
-                    'notes',
-                    'patient_id',
-                    'patient'
-                    ]
-            'diagnosis': request.form['diagnosis'],
-            'notes': request.form['notes'],
-            'patientId': request.form['patientId'],
-            'patientFullName': request.form['patientFullName']
+            key: request.form.get(key)
+            for key in ['diagnosis', 'notes', 'patientId', 'patientFullName']
+            if request.form.get(key) is not None
         }
         record = db.session.get(MedicalRecord, med_id)
         for key, value in update_data.items():

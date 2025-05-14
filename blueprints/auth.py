@@ -1,10 +1,9 @@
 from flask import Blueprint, request, jsonify, session
 from flask_login import logout_user, login_required
-from ..models.base import db
-from ..models.user import User
+from models.base import db
+from models.user import User
 
-
-authbp = Blueprint('Auth', __name__, url_prefix="auth")
+authbp = Blueprint('Auth', __name__, url_prefix="/auth")
 
 
 @authbp.route('/login', methods=['POST'])
