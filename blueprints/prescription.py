@@ -1,9 +1,9 @@
-from flask import Blueprint, request, jsonify
+from flask_login import login_required
+from flask import Blueprint, request, jsonify, session
 from ..models.patient import Patient
 from ..models.prescription import Prescription
 from ..models.base import db
-from ..models.medical_record import MedicalRecord
-from ..models.lab_result import LabResult
+from ..models.user import User
 
 
 prescriptionbp = Blueprint('Prescription', __name__)
@@ -97,4 +97,13 @@ def delete_prescription(prescription_id):
 
 
 @prescriptionbp.route('/my-prescriptions', methods=['GET'])
-# TODO: after implementing auth
+@login_required
+def user_presceriptions():
+    try:
+        user_name = session['name']
+        user = db.session.query(User).filter(
+                User.name == user_name
+                ).first()
+        return jsonify(user.prescriptions)
+    except Exception as e:
+        raise e

@@ -1,4 +1,5 @@
-from flask import Blueprint, request, jsonify
+from flask_login import login_required
+from flask import Blueprint, request, jsonify, session
 from ..models.medical_record import MedicalRecord
 from ..models.base import db
 from ..models.patient import Patient
@@ -10,6 +11,7 @@ med_recordbp = Blueprint('MedRecord', __name__, url_prefix='medical_record')
 
 
 @med_recordbp.route('/', methods=['GET'])
+@login_required
 def new_record():
     """Create a new medical record for a patient."""
     try:
@@ -21,10 +23,11 @@ def new_record():
         patient = db.session.get(Patient, patient_id)
         if not patient:
             raise ValueError("No patient found")
-        # TODO: add user id after implmeneting session based auth
         new_record = MedicalRecord(diagnosis=diagnosis,
                                    notes=notes,
-                                   patientId=patient_id)
+                                   patientId=patient_id,
+                                   userId=session.get('id')
+                                   )
         db.session.add(new_record)
         db.session.commit()
         return jsonify({'message': f"Created new medical record for patient \
@@ -34,6 +37,7 @@ def new_record():
 
 
 @med_recordbp.route('/int:<med_id>', methods=['POST'])
+@login_required
 def update_record(med_id):
     """Update an existing medical record for a patient."""
     try:
@@ -62,6 +66,7 @@ def update_record(med_id):
 
 
 @med_recordbp.route('/int:<med_id>', methods=['GET'])
+@login_required
 def get_record(med_id):
     """Retrieve a specific medical record by ID or all medical records
     if no ID is provided."""
@@ -77,6 +82,7 @@ def get_record(med_id):
 
 
 @med_recordbp.route('/int:<med_id>', methods=['DELETE'])
+@login_required
 def del_record(med_id):
     """Delete a medical record by its ID."""
     if med_id is None or med_id <= 0:

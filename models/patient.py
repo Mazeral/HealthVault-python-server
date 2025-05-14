@@ -1,8 +1,8 @@
-import Base from .base
 from sqlalchemy import Enum, Date, func
 import enum
 from datetime import date
 from typing import List, Optional
+import db from .base
 
 
 class Sex(enum.Enum):
@@ -21,7 +21,7 @@ class BloodGroup(enum.Enum):
     O_MINUS = "O-"
 
 
-class Patient(Base):
+class Patient(db.Model):
     __tablename__ = "patient"
     id: Mapped[int] = mapped_column(primary_key=True)
     fullName: Mapped[str] = mapped_column(String, unique=True)

@@ -1,11 +1,11 @@
-import Base from .base
 from sqlalchemy import Enum, Date, func
 import enum
 from datetime import date
 from typing import List, Optional
+import db from .base
 
 
-class Prescription(Base):
+class Prescription(db.Model):
     __tablename = "prescription"
     id: Mapped[int] = mapped_column(primary_key=True)
     medication: Mapped[str] = mapped_column(String)

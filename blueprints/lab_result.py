@@ -1,4 +1,5 @@
-from flask import Blueprint, request, jsonify
+from flask_login import login_required
+from flask import Blueprint, request, jsonify, session
 from ..models.lab_result import LabResult
 from ..models.base import db
 from ..models.patient import Patient
@@ -9,6 +10,7 @@ lab_resultbp = Blueprint('labResult', __name__, url_prefix="lab-results")
 
 
 @lab_resultbp.route('/', methods=['POST'])
+@login_required
 def new_lab_result():
     """Create a new lab result for a patient."""
     try:
@@ -21,10 +23,9 @@ def new_lab_result():
         patient = db.session.query(Patient).filter_by(patient_full_name).first()
         if not patient:
             raise ValueError("Patient not found")
-        patient_id = patient.id
+        patient_id = sesson.get('id')
     except Exception as e:
         raise e
-    # TODO: Implement authentication logic and associate a user
     new_result = LabResult(
         testName=test_name,
         result=result,
@@ -39,15 +40,15 @@ def new_lab_result():
             {test_name} for the patient {patient_full_name}'}), 201
 
 
-@lab_resultbp.route('/<lab_id>', methods=['GET'])
+@lab_resultbp.route('/int:<lab_id>', methods=['GET'])
 @lab_resultbp.route('/', methods=['GET'], defaults={'id': None})
+@login_required
 def get_lab_result(lab_id):
     """Retrieve a specific lab result by ID
     or all lab results if no ID is provided."""
     try:
         if lab_id:
-            # TODO: Check authentication, then return the lab result
-            pass
+            return jsonify({"Lab result": db.session.get(LabResult, lab_id)})
         else:
             # Return all lab results
             lab_results = db.session.query(LabResult).all()
@@ -57,6 +58,7 @@ def get_lab_result(lab_id):
 
 
 @lab_resultbp.route('/int:<patient_id>', methods=['POST'])
+@login_required
 def update_lab_result(patient_id):
     """Update an existing lab result for a patient."""
     try:
@@ -90,6 +92,7 @@ def update_lab_result(patient_id):
 
 
 @lab_resultbp.route('/int:<lab_id>', methods=['DELETE'])
+@login_required
 def delete_lab_result(lab_id):
     """Delete a lab result by its ID."""
     if lab_id is None or lab_id <= 0:

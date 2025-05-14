@@ -1,3 +1,4 @@
+from flask_login import login_required
 from flask import Blueprint, request, jsonify
 from ..models.base import db
 from ..models.user import User
@@ -8,6 +9,7 @@ userbp = Blueprint('User', __name__)
 
 
 @userbp.route('/user/<int:user_id>', methods=['GET'])
+@login_required
 def get_user(user_id):
     try:
         if user_id is None or user_id <= 0:
@@ -21,6 +23,7 @@ def get_user(user_id):
 
 
 @userbp.route('/users', methods=['GET'])
+@login_required
 def get_users():
     try:
         return jsonify(db.session.query(User).all()), 200
@@ -29,6 +32,7 @@ def get_users():
 
 
 @userbp.route('/users', methods=['POST'])
+@login_required
 def create_user():
     try:
         data = {
@@ -47,6 +51,7 @@ def create_user():
 
 
 @userbp.route('/user/<int:user_id>', methods=['PUT'])
+@login_required
 def update_user(user_id):
     try:
         if user_id is None or user_id <= 0:
@@ -72,6 +77,7 @@ def update_user(user_id):
 
 
 @userbp.route('/user/<int:user_id>', methods=['DELETE'])
+@login_required
 def delete_user(user_id):
     try:
         if user_id is None or user_id <= 0:

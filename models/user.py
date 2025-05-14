@@ -1,8 +1,10 @@
-import Base from .base
+import db from .base
 from sqlalchemy import Enum, Date, func
 import enum
 from datetime import date
 from typing import List
+from flask-login import UserMixin
+from werkzeug.security import generate_password_hash, check_password_hash
 
 
 class Role(enum.Enum):
@@ -10,12 +12,12 @@ class Role(enum.Enum):
     USER = "user"
 
 
-class User(Base):
+class User(UserMixin, db.Model):
     __tablename__ = "user"
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String, unique=True)
     email: Mapped[str] = mapped_column(String, unique=True)
-    password: Mapped[str] = mapped_column(String)
+    password_hash: Mapped[str] = mapped_column(String)
     role: Mapped[Role] = mapped_column(Enum(Role))
     createdAt: Mapped[date] = mapped_column(Date, server_default=func.now())
     updatedAt: Mapped[date] = mapped_column(Date, server_default=func.now())
@@ -38,3 +40,16 @@ class User(Base):
             back_populates="user",
             cascade="all, delete-orphan"
             )
+
+    # IMPORTANT!!!
+    @property
+    def password(self):
+        """The password property."""
+        raise AttributeError("password is not a readable attribute")
+
+    @password.setter
+    def password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def verify_password(self, password):
+        return check_password_hash(self.password_hash, password)

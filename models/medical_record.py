@@ -1,11 +1,11 @@
-import Base from .base
+from .base import db
 from sqlalchemy import Enum, Date, func
 import enum
 from datetime import date
 from typing import List, Optional
 
 
-class MedicalRecord(Base):
+class MedicalRecord(db.Model):
     # naming in snake_case is the convention in sqlalchemy
     __tablename__ = "medical_record"
     id: Mapped[int] = mapped_column(primary_key=True)

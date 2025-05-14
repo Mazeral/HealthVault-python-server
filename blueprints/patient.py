@@ -1,4 +1,5 @@
-from flask import Blueprint, request, jsonify
+from flask_login import login_required
+from flask import Blueprint, request, jsonify, session
 from ..models.patient import Patient
 from ..models.base import db
 from ..models.medical_record import MedicalRecord
@@ -9,6 +10,7 @@ patientbp = Blueprint('Patient', __name__, url_prefix='patient')
 
 
 @patientbp.route('/', methods=['POST'])
+@login_required
 def new_patient():
     try:
         create_data = {
@@ -28,6 +30,7 @@ def new_patient():
 
 
 @patientbp.route('/int:<patient_id>', methods=['GET'])
+@login_required
 def get_patient_id(patient_id):
     try:
         patient = db.session.get(Patient, patient_id)
@@ -39,6 +42,7 @@ def get_patient_id(patient_id):
 
 
 @patientbp.route('/patients', methods=['GET'])
+@login_required
 def get_patients():
     try:
         patients = db.session.query(Patient).all()
@@ -48,6 +52,7 @@ def get_patients():
 
 
 @patientbp.route('/int:<patient_id>', methods=['POST'])
+@login_required
 def update_patient(patient_id):
     try:
         if patient_id is None or patient_id <= 0:
@@ -55,7 +60,6 @@ def update_patient(patient_id):
         patient = db.session.get(Patient, patient_id)
         if not patient:
             raise ValueError('No patient found')
-        # TODO add userId after implementing auth
         update_data = {
             key: request.form.get(key)
             for key in ['fullName',
@@ -68,6 +72,7 @@ def update_patient(patient_id):
                         ]
             if request.form.get(key)
                 }
+        update_data['userId'] = session.get('id')
         for key, value in update_data:
             setattr(patient, key, value)
             db.session.commit()
@@ -78,6 +83,7 @@ def update_patient(patient_id):
 
 @patientbp.route('/<int:patient_id>/medical_record',
                  methods=['POST'])
+@login_required
 def add_record(patient_id):
     try:
         if patient_id is None or patient_id <= 0:
@@ -100,6 +106,7 @@ def add_record(patient_id):
 
 @patientbp.route('/<int:patient_id>/medical-record',
                  methods=['GET'])
+@login_required
 def get_med_record(patient_id):
     try:
         if patient_id is None or patient_id <= 0:
@@ -114,9 +121,9 @@ def get_med_record(patient_id):
         return jsonify({'error': str(e)})
 
 
-
 @patientbp.route('/<int:patient_id>/lab-results',
                  methods=['GET'])
+@login_required
 def get_lab_result(patient_id):
     try:
         if patient_id is None or patient_id <= 0:
@@ -133,6 +140,7 @@ def get_lab_result(patient_id):
 
 @patientbp.route('/<int:patient_id>',
                  methods=['DELETE'])
+@login_required
 def delete_patient(patient_id):
     try:
         if patient_id is None or patient_id <= 0:
@@ -148,6 +156,7 @@ def delete_patient(patient_id):
 
 
 @patientbp.route('/statistics', methods=['GET'])
+@login_required
 def get_statistics():
     """
     Calculates and returns the number of patients created today, this month, and this year.
